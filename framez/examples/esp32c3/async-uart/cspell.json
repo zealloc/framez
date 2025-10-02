@@ -1,0 +1,23 @@
+{
+    "version": "0.2",
+    "language": "en",
+    "words": [
+        "codegen",
+        "defmt",
+        "framez",
+        "linkall",
+        "println",
+        "riscv",
+        "rustc",
+        "rustflags",
+        "SYSTIMER",
+        "Tlinkall",
+        "uart",
+        "MSVC",
+        "espflash"
+    ],
+    "ignorePaths": [
+        "target",
+        ".vscode"
+    ]
+}
