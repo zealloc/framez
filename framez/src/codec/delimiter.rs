@@ -56,7 +56,7 @@ impl<'buf> Decoder<'buf> for Delimiter<'_> {
             }
             Some(last_byte) => {
                 while self.seen < src.len() {
-                    if src[self.seen] == *last_byte {
+                    if src[self.seen] == *last_byte && self.delimiter.len() <= self.seen + 1 {
                         let src_delimiter =
                             &src[self.seen + 1 - self.delimiter.len()..self.seen + 1];
 
@@ -202,8 +202,9 @@ mod test {
             b"Hey".to_vec(),
         ];
 
-        let decoder = Delimiter::new(b"###");
-        let encoder = Delimiter::new(b"###");
+        // TODO: use delimiters with different lengths in the fuzzer
+        let decoder = Delimiter::new(b"######");
+        let encoder = Delimiter::new(b"######");
         let map = |item: &[u8]| item.to_vec();
 
         sink_stream!(encoder, decoder, items, map);
