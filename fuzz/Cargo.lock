@@ -19,9 +19,9 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 
 [[package]]
 name = "arbitrary"
-version = "1.4.1"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dde20b3d026af13f561bdd0f15edf01fc734f0dafcedbaf42bba506a9517f223"
+checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 
 [[package]]
 name = "autocfg"
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "framez"
-version = "0.2.1"
+version = "0.3.1"
 dependencies = [
  "embedded-io-async",
  "futures",
@@ -117,6 +117,7 @@ dependencies = [
 name = "framez-fuzz"
 version = "0.0.0"
 dependencies = [
+ "arbitrary",
  "embedded-io-adapters",
  "framez",
  "heapless",

@@ -13,6 +13,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
+use arbitrary::Unstructured;
 use embedded_io_adapters::tokio_1::FromTokio;
 use framez::{
     codec::{
@@ -27,27 +28,36 @@ use libfuzzer_sys::fuzz_target;
 use tokio::runtime::Runtime;
 
 fuzz_target!(|data: &[u8]| {
-    Runtime::new().expect("Runtime must build").block_on(async {
-        fuzz(data, Delimiter::new(b"#"), Delimiter::new(b"#"), |data| {
-            (!data.contains(&b'#')).then_some(data).ok_or(())
-        })
-        .await
-        .unwrap();
+    Runtime::new()
+        .expect("Runtime must build")
+        .block_on(async move {
+            let delimiter = Unstructured::new(data)
+                .arbitrary::<u8>()
+                .expect("Failed to generate delimiter");
 
-        fuzz(data, Lines::new(), Lines::new(), |data| {
-            (!data.contains(&b'\n')).then_some(data).ok_or(())
-        })
-        .await
-        .unwrap();
+            fuzz(
+                data,
+                Delimiter::new(delimiter),
+                Delimiter::new(delimiter),
+                |data| (!data.contains(&delimiter)).then_some(data).ok_or(()),
+            )
+            .await
+            .unwrap();
 
-        fuzz(data, StrLines::new(), StrLines::new(), |data| {
-            (!data.contains(&b'\n')).then_some(data).ok_or(())?;
+            fuzz(data, Lines::new(), Lines::new(), |data| {
+                (!data.contains(&b'\n')).then_some(data).ok_or(())
+            })
+            .await
+            .unwrap();
 
-            str::from_utf8(data).map_err(|_| ())
-        })
-        .await
-        .unwrap();
-    });
+            fuzz(data, StrLines::new(), StrLines::new(), |data| {
+                (!data.contains(&b'\n')).then_some(data).ok_or(())?;
+
+                str::from_utf8(data).map_err(|_| ())
+            })
+            .await
+            .unwrap();
+        });
 });
 
 // Note: Bytes can not be fuzzed like this
