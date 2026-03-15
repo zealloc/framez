@@ -8,14 +8,14 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
-libfuzzer-sys = "0.4"
+libfuzzer-sys = "0.4.12"
 tokio = { version = "1", features = ["full"] }
-embedded-io-adapters = { version = "0.6.1", default-features = false, features = [
+embedded-io-adapters = { version = "0.7", default-features = false, features = [
     "tokio-1",
 ] }
-heapless = { version = "0.8.0", default-features = false }
+heapless = { version = "0.8", default-features = false }
 framez = { path = "../framez", default-features = false }
-arbitrary = "1.4.2"
+arbitrary = "1"
 
 [workspace]
 members = ["."]

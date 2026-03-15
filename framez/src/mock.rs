@@ -21,4 +21,8 @@ impl Write for Noop {
     async fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
         Ok(buf.len())
     }
+
+    async fn flush(&mut self) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }
