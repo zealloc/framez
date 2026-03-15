@@ -15,6 +15,7 @@ embedded-io-adapters = { version = "0.6.1", default-features = false, features =
 ] }
 heapless = { version = "0.8.0", default-features = false }
 framez = { path = "../framez", default-features = false }
+arbitrary = "1.4.2"
 
 [workspace]
 members = ["."]

@@ -14,68 +14,53 @@ use crate::{
 /// This codec tracks progress using an internal state of the underlying buffer, and it must not be used across multiple framing sessions.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Delimiter<'a> {
+pub struct Delimiter {
     /// The delimiter to search for.
-    delimiter: &'a [u8],
+    delimiter: u8,
     /// The number of bytes of the slice that have been seen so far.
     seen: usize,
 }
 
-impl<'a> Delimiter<'a> {
+impl Delimiter {
     /// Creates a new [`Delimiter`] with the given `delimiter`.
     #[inline]
-    pub const fn new(delimiter: &'a [u8]) -> Self {
+    pub const fn new(delimiter: u8) -> Self {
         Self { delimiter, seen: 0 }
     }
 
     /// Returns the delimiter to search for.
     #[inline]
-    pub const fn delimiter(&self) -> &'a [u8] {
+    pub const fn delimiter(&self) -> u8 {
         self.delimiter
     }
 }
 
-impl DecodeError for Delimiter<'_> {
+impl DecodeError for Delimiter {
     type Error = Infallible;
 }
 
-impl<'buf> Decoder<'buf> for Delimiter<'_> {
+impl<'buf> Decoder<'buf> for Delimiter {
     type Item = &'buf [u8];
 
     fn decode(&mut self, src: &'buf mut [u8]) -> Result<Option<(Self::Item, usize)>, Self::Error> {
-        if src.len() < self.delimiter.len() {
+        if src.is_empty() {
             return Ok(None);
         }
 
-        match self.delimiter.last() {
-            None => {
-                let bytes = &src[..self.seen + 1];
+        while self.seen < src.len() {
+            if src[self.seen] == self.delimiter {
+                let bytes = &src[..self.seen];
                 let item = (bytes, self.seen + 1);
 
-                Ok(Some(item))
+                self.seen = 0;
+
+                return Ok(Some(item));
             }
-            Some(last_byte) => {
-                while self.seen < src.len() {
-                    if src[self.seen] == *last_byte {
-                        let src_delimiter =
-                            &src[self.seen + 1 - self.delimiter.len()..self.seen + 1];
 
-                        if src_delimiter == self.delimiter {
-                            let bytes = &src[..self.seen + 1 - self.delimiter.len()];
-                            let item = (bytes, self.seen + 1);
-
-                            self.seen = 0;
-
-                            return Ok(Some(item));
-                        }
-                    }
-
-                    self.seen += 1;
-                }
-
-                Ok(None)
-            }
+            self.seen += 1;
         }
+
+        Ok(None)
     }
 }
 
@@ -97,18 +82,18 @@ impl core::fmt::Display for DelimiterEncodeError {
 
 impl core::error::Error for DelimiterEncodeError {}
 
-impl Encoder<&[u8]> for Delimiter<'_> {
+impl Encoder<&[u8]> for Delimiter {
     type Error = DelimiterEncodeError;
 
     fn encode(&mut self, item: &[u8], dst: &mut [u8]) -> Result<usize, Self::Error> {
-        let size = item.len() + self.delimiter.len();
+        let size = item.len() + 1;
 
         if dst.len() < size {
             return Err(DelimiterEncodeError::BufferTooSmall);
         }
 
         dst[..item.len()].copy_from_slice(item);
-        dst[item.len()..size].copy_from_slice(self.delimiter);
+        dst[item.len()..size].copy_from_slice(&[self.delimiter]);
 
         Ok(size)
     }
@@ -134,17 +119,17 @@ mod test {
 
         // cspell: disable
         let items: &[&[u8]] = &[
-            b"jh asjd##ppppppppppppppp##",
-            b"k hb##jsjuwjal kadj##jsadhjiu##w",
-            b"##jal kadjjsadhjiuwqens ##",
+            b"jh asjd#ppppppppppppppp#",
+            b"k hb#jsjuwjal kadj#jsadhjiu#w",
+            b"#jal kadjjsadhjiuwqens #",
             b"nd ",
-            b"yxxcjajsdi##askdn as",
-            b"jdasd##iouqw es",
-            b"sd##k",
+            b"yxxcjajsdi#askdn as",
+            b"jdasd#iouqw es",
+            b"sd#k",
         ];
         // cspell: enable
 
-        let decoder = Delimiter::new(b"##");
+        let decoder = Delimiter::new(b'#');
 
         let expected: &[&[u8]] = &[];
         framed_read!(items, expected, decoder, 1, BufferTooSmall);
@@ -165,7 +150,7 @@ mod test {
         // cspell: disable
 
         let expected: &[&[u8]] = &[b"jh asjd"];
-        framed_read!(items, expected, decoder, 16, BufferTooSmall);
+        framed_read!(items, expected, decoder, 14, BufferTooSmall);
 
         let expected: &[&[u8]] = &[
             b"jh asjd",
@@ -200,10 +185,13 @@ mod test {
             b"Hei".to_vec(),
             b"sup".to_vec(),
             b"Hey".to_vec(),
+            b"He".to_vec(),
+            b"H".to_vec(),
+            b"".to_vec(),
         ];
 
-        let decoder = Delimiter::new(b"###");
-        let encoder = Delimiter::new(b"###");
+        let decoder = Delimiter::new(b'#');
+        let encoder = Delimiter::new(b'#');
         let map = |item: &[u8]| item.to_vec();
 
         sink_stream!(encoder, decoder, items, map);

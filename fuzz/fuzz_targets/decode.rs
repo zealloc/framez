@@ -6,6 +6,7 @@
 
 #![no_main]
 
+use arbitrary::Unstructured;
 use framez::{
     codec::{
         bytes::Bytes,
@@ -20,7 +21,11 @@ fuzz_target!(|data: &[u8]| {
     let buf = &mut [0_u8; 64];
     let data = &mut std::vec::Vec::from(data);
 
-    let mut codec = Delimiter::new(b"#");
+    let delimiter = Unstructured::new(data)
+        .arbitrary::<u8>()
+        .expect("Failed to generate delimiter");
+
+    let mut codec = Delimiter::new(delimiter);
     let _ = codec.decode(data).expect("Must be Infallible");
 
     let mut codec = Bytes::new();

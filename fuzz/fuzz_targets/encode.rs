@@ -6,6 +6,7 @@
 
 #![no_main]
 
+use arbitrary::Unstructured;
 use framez::{
     codec::{
         bytes::Bytes,
@@ -19,7 +20,11 @@ use libfuzzer_sys::fuzz_target;
 fuzz_target!(|data: &[u8]| {
     let buf = &mut [0_u8; 64];
 
-    let mut codec = Delimiter::new(b"#");
+    let delimiter = Unstructured::new(data)
+        .arbitrary::<u8>()
+        .expect("Failed to generate delimiter");
+
+    let mut codec = Delimiter::new(delimiter);
     let _ = codec.encode(data, buf);
 
     let mut codec = Bytes::new();
